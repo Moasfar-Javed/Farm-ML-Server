@@ -6,7 +6,7 @@ import requests
 app = Flask(__name__)
 
 model_water_filename = 'water_requirement_model.joblib'
-model_water = joblib.load(model_water_filename)
+model_water = joblib.load('/home/ec2-user/Farm-AI-Server/' + model_water_filename)
 
 
 def get_soil_type(moisture):
