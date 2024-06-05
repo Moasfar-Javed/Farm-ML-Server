@@ -140,15 +140,15 @@ def predict():
     }
     
 
-    return jsonify({'data': response_data})
+    # return jsonify({'data': response_data})
     
-    # response_url = "https://farm.dijinx.com/api/v1/farm/predictor/result"    
-    # response = requests.post(response_url, json=response_data)
+    response_url = "https://farm.dijinx.com/api/v1/farm/predictor/result"    
+    response = requests.post(response_url, json=response_data)
 
-    # if response.status_code == 200:
-    #     return jsonify({'status': 'success', 'data': response_data})
-    # else:
-    #     return jsonify({'status': 'failure', 'error': response.text}), response.status_code
+    if response.status_code == 200:
+        return jsonify(response_data)
+    else:
+        return jsonify(response_data), response.status_code
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
