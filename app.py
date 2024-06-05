@@ -120,7 +120,7 @@ def predict():
     
     predicted_water = model_water.predict(df_predict)
     release_duration = predicted_water / 2  
-    health_status= get_health_status(mean_moisture)
+    # health_status= get_health_status(mean_moisture)
 
     
     response_data = {
@@ -136,7 +136,7 @@ def predict():
         'time': current_time,
         # 'next_irrigation': next_irrigation,
         'release_duration': release_duration.tolist(),
-        'health': health_status,
+        # 'health': health_status,
     }
 
     
