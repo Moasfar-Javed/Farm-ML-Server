@@ -76,7 +76,7 @@ def predict():
     crop_title = data["crop"]["type"]
     crop_id = crop_id_mapping.get(crop_title.upper(), 0) 
 
-    next_irrigation = data["crop"]["next_irrigation"]
+    # next_irrigation = data["crop"]["next_irrigation"]
 
     
     current_time = data["weather"]["current"]["time"]
@@ -134,7 +134,7 @@ def predict():
         
         'crop_id': crop_id,
         'time': current_time,
-        'next_irrigation': next_irrigation,
+        # 'next_irrigation': next_irrigation,
         'release_duration': release_duration.tolist(),
         'health': health_status,
     }
