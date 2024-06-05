@@ -140,7 +140,7 @@ def predict():
     }
     
 
-    return jsonify({data: response_data})
+    return jsonify({'data': response_data})
     
     # response_url = "https://farm.dijinx.com/api/v1/farm/predictor/result"    
     # response = requests.post(response_url, json=response_data)
