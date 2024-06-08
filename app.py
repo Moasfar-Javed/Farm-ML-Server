@@ -1,7 +1,11 @@
+
 from flask import Flask, request, jsonify
 import joblib
 import pandas as pd
 import requests
+import asyncio
+import aiohttp
+from concurrent.futures import ThreadPoolExecutor
 
 app = Flask(__name__)
 
@@ -67,21 +71,20 @@ crop_id_mapping = {
     'ONION': 14,
 }
 
-
 @app.route('/predictor/predict', methods=['POST'])
 def predict():
     data = request.get_json()
 
+    # Immediately start the background task
+    executor.submit(background_task, data)
     
+    return "Prediction model started"
+
+def background_task(data):
     crop_title = data["crop"]["type"]
     crop_id = crop_id_mapping.get(crop_title.upper(), 0) 
 
-    # next_irrigation = data["crop"]["next_irrigation"]
-
-    
     current_time = data["weather"]["current"]["time"]
-
-     
     moisture_readings = [reading["moisture"] for reading in data["readings"]]
     mean_moisture = sum(moisture_readings) / len(moisture_readings) if moisture_readings else 0
     
@@ -89,40 +92,30 @@ def predict():
     region = get_region(mean_moisture)
 
     precipitation = data["weather"]["current"]["precipitation"]
-    
-    
     weather_code = None
     for hour in data["weather"]["hourly"]:
         if hour["time"] == current_time:
             weather_code = hour["weatherCode"]
             break
-    
-    
-    weather_condition = get_weather_condition(weather_code,precipitation)  # Assuming first code is representative
 
-    
+    weather_condition = get_weather_condition(weather_code, precipitation)
     hourly_temperatures = [hour["temperature2m"] for hour in data["weather"]["hourly"]]
-    
-    
     temperature_min = min(hourly_temperatures)
     temperature_max = max(hourly_temperatures)
-    
-    
+
     df_predict = pd.DataFrame({
-    'CROP TYPE': [crop_title.upper()],
-    'SOIL TYPE': [soil_type.upper()],
-    'REGION': [region.upper()],
-    'WEATHER CONDITION': [weather_condition.upper()],
-    'temperature_min': [temperature_min],
-    'temperature_max': [temperature_max]
+        'CROP TYPE': [crop_title.upper()],
+        'SOIL TYPE': [soil_type.upper()],
+        'REGION': [region.upper()],
+        'WEATHER CONDITION': [weather_condition.upper()],
+        'temperature_min': [temperature_min],
+        'temperature_max': [temperature_max]
     })
-    
-    
+
     predicted_water = model_water.predict(df_predict)
     release_duration = predicted_water / 2  
-    health_status= get_health_status(mean_moisture)
+    health_status = get_health_status(mean_moisture)
 
-    
     response_data = {
         'crop_title': crop_title,
         'soil_type': soil_type,
@@ -131,25 +124,108 @@ def predict():
         'temperature_min': temperature_min,
         'temperature_max': temperature_max,
         'predicted_water': predicted_water.tolist(),
-        
         'crop_id': crop_id,
         'time': current_time,
-        # 'next_irrigation': next_irrigation,
         'release_duration': release_duration.tolist(),
         'health': health_status,
     }
-    
 
-    # return jsonify({'data': response_data})
-    
-    response_url = "https://farm.dijinx.com/api/v1/farm/predictor/result"    
-    response = requests.post(response_url, json=response_data)
+    asyncio.run(send_result(response_data))
 
-    if response.status_code == 200:
-        return jsonify(response_data)
-    else:
-        return jsonify(response_data), response.status_code
+async def send_result(response_data):
+    response_url = "https://farm.dijinx.com/api/v1/farm/predictor/result"
+    async with aiohttp.ClientSession() as session:
+        async with session.post(response_url, json=response_data) as response:
+            if response.status == 200:
+                print("Result successfully sent.")
+            else:
+                print(f"Failed to send result: {response.status}")
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
-    #TEST 1
+
+# @app.route('/predictor/predict', methods=['POST'])
+# def predict():
+#     data = request.get_json()
+
+    
+#     crop_title = data["crop"]["type"]
+#     crop_id = crop_id_mapping.get(crop_title.upper(), 0) 
+
+#     # next_irrigation = data["crop"]["next_irrigation"]
+
+    
+#     current_time = data["weather"]["current"]["time"]
+
+     
+#     moisture_readings = [reading["moisture"] for reading in data["readings"]]
+#     mean_moisture = sum(moisture_readings) / len(moisture_readings) if moisture_readings else 0
+    
+#     soil_type = get_soil_type(mean_moisture)
+#     region = get_region(mean_moisture)
+
+#     precipitation = data["weather"]["current"]["precipitation"]
+    
+    
+#     weather_code = None
+#     for hour in data["weather"]["hourly"]:
+#         if hour["time"] == current_time:
+#             weather_code = hour["weatherCode"]
+#             break
+    
+    
+#     weather_condition = get_weather_condition(weather_code,precipitation)  # Assuming first code is representative
+
+    
+#     hourly_temperatures = [hour["temperature2m"] for hour in data["weather"]["hourly"]]
+    
+    
+#     temperature_min = min(hourly_temperatures)
+#     temperature_max = max(hourly_temperatures)
+    
+    
+#     df_predict = pd.DataFrame({
+#     'CROP TYPE': [crop_title.upper()],
+#     'SOIL TYPE': [soil_type.upper()],
+#     'REGION': [region.upper()],
+#     'WEATHER CONDITION': [weather_condition.upper()],
+#     'temperature_min': [temperature_min],
+#     'temperature_max': [temperature_max]
+#     })
+    
+    
+#     predicted_water = model_water.predict(df_predict)
+#     release_duration = predicted_water / 2  
+#     health_status= get_health_status(mean_moisture)
+
+    
+#     response_data = {
+#         'crop_title': crop_title,
+#         'soil_type': soil_type,
+#         'region': region,
+#         'weather_condition': weather_condition,
+#         'temperature_min': temperature_min,
+#         'temperature_max': temperature_max,
+#         'predicted_water': predicted_water.tolist(),
+        
+#         'crop_id': crop_id,
+#         'time': current_time,
+#         # 'next_irrigation': next_irrigation,
+#         'release_duration': release_duration.tolist(),
+#         'health': health_status,
+#     }
+    
+
+#     # return jsonify({'data': response_data})
+    
+#     response_url = "https://farm.dijinx.com/api/v1/farm/predictor/result"    
+#     response = requests.post(response_url, json=response_data)
+
+#     if response.status_code == 200:
+#         return jsonify(response_data)
+#     else:
+#         return jsonify(response_data), response.status_code
+
+# if __name__ == '__main__':
+#     app.run(port=5000, debug=True)
+#     #TEST 1
