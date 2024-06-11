@@ -76,7 +76,7 @@ def predict():
     crop_title = data["crop"]["type"]
     crop_id = crop_id_mapping.get(crop_title.upper(), 0) 
 
-    # next_irrigation = data["crop"]["next_irrigation"]
+    c_id = data["crop"]["_id"]
 
     
     current_time = data["weather"]["current"]["time"]
@@ -124,6 +124,7 @@ def predict():
 
     
     response_data = {
+        'id': c_id,
         'crop_title': crop_title,
         'soil_type': soil_type,
         'region': region,
@@ -131,10 +132,8 @@ def predict():
         'temperature_min': temperature_min,
         'temperature_max': temperature_max,
         'predicted_water': predicted_water.tolist(),
-        
         'crop_id': crop_id,
         'time': current_time,
-        # 'next_irrigation': next_irrigation,
         'release_duration': release_duration.tolist(),
         'health': health_status,
     }
