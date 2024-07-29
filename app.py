@@ -8,7 +8,6 @@ app = Flask(__name__)
 model_water_filename = 'water_requirement_model.joblib'
 model_water = joblib.load('/home/ec2-user/Farm-AI-Server/' + model_water_filename)
 
-
 def get_soil_type(moisture):
     if moisture > 45:
         return "wet"
@@ -137,18 +136,8 @@ def predict():
         'release_duration': release_duration.tolist(),
         'health': health_status,
     }
-    
 
     return jsonify({'data': response_data})
-    
-    # response_url = "https://farm.dijinx.com/api/v1/farm/predictor/result"    
-    # response = requests.post(response_url, json=response_data)
-
-    # if response.status_code == 200:
-    #     return jsonify(response_data)
-    # else:
-    #     return jsonify(response_data), response.status_code
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
-    
